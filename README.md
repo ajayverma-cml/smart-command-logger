@@ -73,8 +73,7 @@ echo 'export GEMINI_API_KEY="your-key-here"' >> ~/.bashrc
 Edit your `~/.bashrc` and append the following:
 
 ```bash
-# Hook: Track successful commands and send to logger
-
+# Hook to capture last successful command
 function preexec() {
     export LAST_COMMAND=$(history 1 | sed 's/^[ ]*[0-9]\+[ ]*//')
 }
@@ -83,10 +82,18 @@ function precmd() {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
         export LAST_SUCCESS_CMD="$LAST_COMMAND"
-        /home/ajayverma/Documents/test/tools/myenv/bin/python /home/ajayverma/Documents/test/tools/command_logger.py &
+        PY_SCRIPT="/home/ajayverma/Documents/test/tools/command_logger.py"
+        PY_BIN="/home/ajayverma/Documents/test/tools/myenv/bin/python"
+
+        # Only run logger if the script exists
+        if [ -f "$PY_SCRIPT" ]; then
+            "$PY_BIN" "$PY_SCRIPT" > /dev/null 2>&1 &
+            disown  # Prevent shell from tracking the job
+        fi
     fi
 }
 
+# Set PROMPT_COMMAND to call precmd after every command
 PROMPT_COMMAND='precmd;'
 trap 'preexec' DEBUG
 ```
